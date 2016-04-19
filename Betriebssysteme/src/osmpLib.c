@@ -6,36 +6,28 @@
  */
 
 #include "OSMP.h"
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 
-int OSMP_Init(int *argc, char ***argv){
-	int i , anz;
-	pid_t pid;
+int OSMP_Init(int *argc, char ***argv) {
+
+	printf("OSMP_init");
+
 	//Prüft, ob genug Argumente übergeben wurden
 	//So sollte argv gefüllt werden: ./osmprun 5 ./osmpexecutable [param1,…]
-	if (*argc < 2){
+	if ((*argc) < 1){
 		printf("Error zu wenig Argumente/n");
 		return OSMP_ERROR;
 	}
 
 
-	//liest das zweite argument aus, um die Anzahl der Prozesse zu erhalten
-	// atoi wandelt einen String in ein Int um
-	anz = atoi((*argv)[0]);
-	printf("Anzahl: %i\n", anz);
-	for (i = 0; i < anz; i++){
-		pid = fork();
-		//Prüft ob der Prozess ein Kindprozess ist
-		if (pid > 0){
-			return OSMP_SUCCESS;
-		}
-
+	printf("Starting Process %s\n", (*argv)[0]);
+	int rv = execlp((*argv)[0], "EchoAll", "Argument1", "2", NULL);
+	if (rv == -1) {
+		printf("Could not start %s\n", (*argv)[0]);
+		printf("Reason: %s\n", strerror(errno));
+		exit(rv);
 	}
-	waitpid(pid, NULL, 0);
-	printf("\n\nAll finished\n\n");
-	return OSMP_SUCCESS;
+
+	return OSMP_ERROR;
 }
 
 
