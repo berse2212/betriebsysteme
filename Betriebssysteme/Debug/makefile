@@ -23,19 +23,19 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: betriebsysteme
+all: Betriebssysteme
 
 # Tool invocations
-betriebsysteme: $(OBJS) $(USER_OBJS)
+Betriebssysteme: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc  -o "betriebsysteme" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/tobias/git/betriebsysteme/osmpLib/Debug" -o "Betriebssysteme" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(EXECUTABLES)$(OBJS)$(C_DEPS) betriebsysteme
+	-$(RM) $(EXECUTABLES)$(OBJS)$(C_DEPS) Betriebssysteme
 	-@echo ' '
 
 .PHONY: all clean dependents
