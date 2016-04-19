@@ -20,7 +20,7 @@ int OSMP_Init(int *argc, char ***argv) {
 
 
 	printf("Starting Process %s\n", (*argv)[0]);
-	int rv = execlp((*argv)[0], "EchoAll", "Argument1", "2", NULL);
+	int rv = execvp((*argv)[0], (*argv));
 	if (rv == -1) {
 		printf("Could not start %s\n", (*argv)[0]);
 		printf("Reason: %s\n", strerror(errno));
