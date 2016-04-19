@@ -42,26 +42,35 @@ int OSMP_Init(int *argc, char ***argv){
 
 int OSMP_Size(int *size){
 
+	printf("OSMP_Size(size: %d) ", (*size));
 
 	return OSMP_SUCCESS;
 }
 
 int OSMP_Rank(int *rank){
 
+	printf("OSMP_Rank(rank: %d) ", (*rank));
+
 	return OSMP_SUCCESS;
 }
 
 int OSMP_Send(const void *buf, int count, int dest ){
+
+	printf("OSMP_Send(buf: %s, count: %d, dest: %d) ", buf, count, dest);
 
 	return OSMP_SUCCESS;
 }
 
 int OSMP_Recv(void *buf, int count, int *source, int *len){
 
+	printf("OSMP_Recv(buf: %s,  count: %d, source %d, len: %d) ", buf, count, (*source), (*len));
+
 	return OSMP_SUCCESS;
 }
 
 int OSMP_Finalize(void){
+
+	printf("OSMP_Finalize() ");
 
 	return OSMP_SUCCESS;
 }

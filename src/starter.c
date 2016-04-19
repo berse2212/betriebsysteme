@@ -103,7 +103,7 @@ void startOutput() {
 	}
 }
 
-int main(int argc, char *argv[]) {
+int mainOld(int argc, char *argv[]) {
 
 //	startOutput();
 	startEchoAll(5);
