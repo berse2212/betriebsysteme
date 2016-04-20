@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
 
 	sharedMemory = allocate(ftok("/home/tobias/git/betriebsysteme/keyDatei", 5), &shmid);
 
-	int count = 1;
+	int count = 4;
 
 	create(count, "/home/tobias/git/betriebsysteme/osmpexecutable/Debug/osmpexecutable", NULL);
 

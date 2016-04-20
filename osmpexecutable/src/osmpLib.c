@@ -68,11 +68,11 @@ int OSMP_Rank(int *rank){
 		memoryAsInt++;
 
 
-		for(int i = 0; i < size; i++) {
+		for(int i = 0; i < size; i++, memoryAsInt++) {
 			printf("Pid: %d\n", (*memoryAsInt));
 
 			if((*memoryAsInt) == getpid()) {
-				(*rank) = (*memoryAsInt);
+				(*rank) = i;
 				return OSMP_SUCCESS;
 			}
 		}
