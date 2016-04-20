@@ -5,18 +5,21 @@
  *      Author: tobias
  */
 
-#include "OSMP.h"
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/errno.h>
+#include <unistd.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
-void create(char*);
+void create(char*, char**);
 
 void* allocate(int, int*);
 
 void delete(void*, int);
 
 
-void create(char* path) {
+void create(char* path, char** arguments) {
 	pid_t pid = fork();
 
 	printf("Pid ist: %d\n", pid);
@@ -29,15 +32,14 @@ void create(char* path) {
 	if(pid == 0) {
 
 		printf("Ich bin der Kindprozess\n");
-		printf("argv %s\n", path);
 
-		int count = 1;
-		char** argv = malloc(sizeof(char*) * 2);
-		argv[0] = path;
-		argv[1] = "test";
-
-
-		OSMP_Init(&count, &argv);
+		printf("Starting Process %s\n", path);
+		int rv = execvp(path, arguments);
+		if (rv == -1) {
+			printf("Could not start %s\n", path);
+			printf("Reason: %s\n", strerror(errno));
+			exit(rv);
+		}
 		printf("Fehler bei der AUsführung\n");
 		exit(-1);
 	}
@@ -93,13 +95,15 @@ void delete(void* ptr, int key) {
 }
 
 int main(int argc, char **argv) {
-	create("/home/tobias/git/betriebsysteme/osmpexecutable/Debug/osmpexecutable");
+	create("/home/tobias/git/betriebsysteme/osmpexecutable/Debug/osmpexecutable", NULL);
 
 	int shmid = 0;
 
 	void* ptr = allocate(ftok("/home/tobias/git/betriebsysteme/keyDatei", 5), &shmid);
 
 	printf("Shmid = %d\n", shmid);
+
+	sleep(5);
 
 	delete(ptr, shmid);
 }

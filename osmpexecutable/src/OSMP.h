@@ -13,9 +13,14 @@
 #include <string.h>
 #include <errno.h>
 #include <limits.h>
-#include <unistd.h>
+#include <sys/shm.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+
+struct OSMP_Processes {
+	int size;
+	int ranks[];
+};
 
 int OSMP_Init(int *argc, char ***argv);
 int OSMP_Size(int *size);

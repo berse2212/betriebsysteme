@@ -29,7 +29,7 @@ all: Betriebssysteme
 Betriebssysteme: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/tobias/git/betriebsysteme/osmpLib/Debug" -o "Betriebssysteme" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc  -o "Betriebssysteme" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
