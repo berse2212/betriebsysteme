@@ -1,9 +1,12 @@
-/*
- * osmprun.c
- *
- *  Created on: 19.04.2016
- *      Author: tobias
- */
+/******************************************************************************
+* FILE: osmprun.c
+* DESCRIPTION:
+*
+* File in dem das Programm gestartet wird.
+* Es werden 5 Prozesse erzeugt, die das Programm osmpexecuteble ausführen.
+* Für die Interprozesskommunikation wird ein Shared Memory zur Verfügung gestellt.
+*
+* LAST MODIFICATION: Dominik und Tobias, 19.04.2016*****************************************************************************/
 
 #include <stdlib.h>
 #include <sys/types.h>
@@ -15,13 +18,36 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
+/**
+ * Erzeugt neue Prozesse.
+ * Es werden so viele Prozesse erstellt, wie in count angegeben.
+ * Jeder Kindprozess lädt das Programm, welches unter dem übergebenden Pfad zu finden, nach der Erzeugung.
+ * Beim Programmaufruf werden die übergebenen Argumente mit übergeben.
+ *
+ * @param count Anzahl der Prozesse, die erzeugt werden sollen.
+ * @param path Pfad, wo das Programm osmpexecutable liegt
+ * @param arguments Argumente, die bei der Programmausführung übergeben werden
+ */
+void create(int count, char* path, char** arguments);
 
-void create(int, char*, char**);
+/**
+ * Allokiert einen neuen Shared Memory mit dem Key.
+ * @param key gültiger Schlüssel für IPC-Routinen, um shared memory zu erzeuegen
+ * @param shmid Adresse ID des Shared Memory
+ * @return Pointer auf den Shared Memory
+ */
+void* allocate(int key, int* shmid);
 
-void* allocate(int, int*);
+/**
+ * Löscht den Shared Memory.
+ * @param ptr Pointer zum Shared Memory
+ * @param key gültiger Schlüssel für IPC-Routinen
+ */
+void delete(void* ptr, int key);
 
-void delete(void*, int);
-
+/**
+ * Pointer zum Shared Memory.
+ */
 void* sharedMemory;
 
 void create(int count, char* path, char** arguments) {
@@ -39,11 +65,10 @@ void create(int count, char* path, char** arguments) {
 		}
 
 		if(pid == 0) {
-
 			printf("Ich bin der Kindprozess\n");
-
 			printf("Starting Process %s\n", path);
 			int rv = execvp(path, arguments);
+
 			if (rv == -1) {
 				printf("Could not start %s\n", path);
 				printf("Reason: %s\n", strerror(errno));
@@ -52,13 +77,8 @@ void create(int count, char* path, char** arguments) {
 			printf("Fehler bei der AUsführung\n");
 			exit(-1);
 		}
-
 		memcpy(sharedMemory + sizeof(int) * (i+1), &pid, sizeof(int));
 	}
-
-
-
-
 	printf("Ich bin der ELternprozess\n");
 }
 
@@ -73,7 +93,6 @@ void* allocate(int key, int* shmid) {
 	if(*shmid == -1) {
 		printf("Fehler beim allokieren vom Gemeinsammenspeicher. Grund: %s\n", strerror(errno));
 		exit(-1);
-
 	}
 
 	void* ptr = shmat(*shmid, NULL, 0);
@@ -111,11 +130,13 @@ int main(int argc, char **argv) {
 
 	int shmid = 0;
 
-	sharedMemory = allocate(ftok("/home/tobias/git/betriebsysteme/keyDatei", 5), &shmid);
+	sharedMemory = allocate(ftok("/home/dominik/git/betriebsysteme/keyDatei", 5), &shmid);
+	//sharedMemory = allocate(ftok("/home/tobias/git/betriebsysteme/keyDatei", 5), &shmid);
 
 	int count = 4;
 
-	create(count, "/home/tobias/git/betriebsysteme/osmpexecutable/Debug/osmpexecutable", NULL);
+	create(count, "/home/dominik/git/betriebsysteme/osmpexecutable/Debug/osmpexecutable", NULL);
+	//create(count, "/home/tobias/git/betriebsysteme/osmpexecutable/Debug/osmpexecutable", NULL);
 
 	int* ptr = sharedMemory;
 
