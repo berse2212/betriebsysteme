@@ -7,38 +7,78 @@
 
 #include "OSMP.h"
 
+#define FAIL ((void*) -1)
+
 void* sharedMemory = NULL;
+
+int initialised = 0;
 
 int OSMP_Init(int *argc, char ***argv) {
 
-	printf("OSMP_init");
+	printf("OSMP_init\n");
 
 	//Prüft, ob genug Argumente übergeben wurden
 	//So sollte argv gefüllt werden: ./osmprun 5 ./osmpexecutable [param1,…]
 
 	int key =  ftok("/home/tobias/git/betriebsysteme/keyDatei", 5);
 
+	if(key == -1) {
+		return OSMP_ERROR;
+	}
+
 	int shmid = shmget(key, 4096, 0);
+
+	if(shmid == -1) {
+		return OSMP_ERROR;
+	}
 
 	sharedMemory = shmat(shmid, NULL, 0);
 
-	return OSMP_ERROR;
+	if(sharedMemory == FAIL) {
+		return OSMP_ERROR;
+	}
+
+	initialised = 1;
+
+	return OSMP_SUCCESS;
 }
 
 
 
 int OSMP_Size(int *size){
 
-	printf("OSMP_Size(size: %d) ", (*size));
+	if(initialised) {
+		(*size) = (*((int*)sharedMemory));
 
-	return OSMP_SUCCESS;
+		return OSMP_SUCCESS;
+	} else {
+		return OSMP_ERROR;
+	}
+
 }
 
 int OSMP_Rank(int *rank){
 
-	printf("OSMP_Rank(rank: %d) ", (*rank));
+	printf("OSMP_Rank(rank: %d)\n", (*rank));
 
-	return OSMP_SUCCESS;
+	if(initialised) {
+		int * memoryAsInt = (int*) sharedMemory;
+
+		int size = (*memoryAsInt);
+		memoryAsInt++;
+
+
+		for(int i = 0; i < size; i++) {
+			printf("Pid: %d\n", (*memoryAsInt));
+
+			if((*memoryAsInt) == getpid()) {
+				(*rank) = (*memoryAsInt);
+				return OSMP_SUCCESS;
+			}
+		}
+	}
+
+	return OSMP_ERROR;
 }
 
 int OSMP_Send(const void *buf, int count, int dest ){

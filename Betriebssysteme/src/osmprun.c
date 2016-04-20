@@ -7,44 +7,57 @@
 
 #include <stdlib.h>
 #include <sys/types.h>
+#include <stdio.h>
+#include <wait.h>
 #include <sys/errno.h>
 #include <unistd.h>
+#include <string.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
-void create(char*, char**);
+
+void create(int, char*, char**);
 
 void* allocate(int, int*);
 
 void delete(void*, int);
 
+void* sharedMemory;
 
-void create(char* path, char** arguments) {
-	pid_t pid = fork();
+void create(int count, char* path, char** arguments) {
 
-	printf("Pid ist: %d\n", pid);
+	memcpy(sharedMemory, &count, sizeof(int));
 
-	if(pid == -1) {
-		printf("Fehler beim Erzeugen\n");
-		exit(-1);
-	}
+	for(int i = 0; i < count; i++) {
+		pid_t pid = fork();
 
-	if(pid == 0) {
+		printf("Pid ist: %d\n", pid);
 
-		printf("Ich bin der Kindprozess\n");
-
-		printf("Starting Process %s\n", path);
-		int rv = execvp(path, arguments);
-		if (rv == -1) {
-			printf("Could not start %s\n", path);
-			printf("Reason: %s\n", strerror(errno));
-			exit(rv);
+		if(pid == -1) {
+			printf("Fehler beim Erzeugen\n");
+			exit(-1);
 		}
-		printf("Fehler bei der AUsführung\n");
-		exit(-1);
+
+		if(pid == 0) {
+
+			printf("Ich bin der Kindprozess\n");
+
+			printf("Starting Process %s\n", path);
+			int rv = execvp(path, arguments);
+			if (rv == -1) {
+				printf("Could not start %s\n", path);
+				printf("Reason: %s\n", strerror(errno));
+				exit(rv);
+			}
+			printf("Fehler bei der AUsführung\n");
+			exit(-1);
+		}
+
+		memcpy(sharedMemory + sizeof(int) * (i+1), &pid, sizeof(int));
 	}
 
-	waitpid(pid, NULL, 0);
+
+
 
 	printf("Ich bin der ELternprozess\n");
 }
@@ -95,16 +108,31 @@ void delete(void* ptr, int key) {
 }
 
 int main(int argc, char **argv) {
-	create("/home/tobias/git/betriebsysteme/osmpexecutable/Debug/osmpexecutable", NULL);
 
 	int shmid = 0;
 
-	void* ptr = allocate(ftok("/home/tobias/git/betriebsysteme/keyDatei", 5), &shmid);
+	sharedMemory = allocate(ftok("/home/tobias/git/betriebsysteme/keyDatei", 5), &shmid);
+
+	int count = 1;
+
+	create(count, "/home/tobias/git/betriebsysteme/osmpexecutable/Debug/osmpexecutable", NULL);
+
+	int* ptr = sharedMemory;
+
+	printf("Shared Mem:\n");
+	printf("Size: %d\n", (*ptr));
+
+	ptr++;
+
+	printf("Ausgabe Ranks:\n");
+	for(int i = 0; i < count; i++, ptr++) {
+		printf("Rank Nr %d: %d\n", i, (*ptr));
+	}
 
 	printf("Shmid = %d\n", shmid);
 
 	sleep(5);
 
-	delete(ptr, shmid);
+	delete(sharedMemory, shmid);
 }
 
