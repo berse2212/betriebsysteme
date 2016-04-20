@@ -1,11 +1,12 @@
-/*
- * osmpexecutable.c
- *
- *  Created on: 19.04.2016
- *      Author: tobias
- */
+/******************************************************************************
+* FILE: osmpexecutable.c
+* DESCRIPTION:
+*
+* Programm, welches von den Kindprozessen geladen werden soll.
+* Hier werden erstmal nur die OSMP-Routinen getestet.
+*
+* LAST MODIFICATION: Dominik und Tobias, 19.04.2016*****************************************************************************/
 
-#include <stdio.h>
 #include "OSMP.h"
 
 int main(int argc, char **argv) {
@@ -22,7 +23,7 @@ int main(int argc, char **argv) {
 	int rv = OSMP_Init(&argc, &argv);
 
 	if(rv == OSMP_ERROR){
-		printf("Fehler INIT. GRund: %s\n", strerror(errno));
+		printf("Fehler INIT. Grund: %s\n", strerror(errno));
 		exit(-1);
 	}
 
@@ -33,12 +34,11 @@ int main(int argc, char **argv) {
 	rv = OSMP_Size(&size);
 
 	if(rv == OSMP_ERROR){
-		printf("Fehler Size. GRund: %s\n", strerror(errno));
+		printf("Fehler Size. Grund: %s\n", strerror(errno));
 		exit(-1);
 	}
 
-	printf("DIes ist die SIze: %d\n", size);
-
+	printf("Dies ist die Size: %d\n", size);
 	printf("Teste Rank\n");
 
 	int rank = -1;
@@ -50,9 +50,7 @@ int main(int argc, char **argv) {
 		exit(-1);
 	}
 
-	printf("DIes ist der Rank: %d\n", rank);
-
-
+	printf("Dies ist der Rank: %d\n", rank);
 	return 0;
 }
 
