@@ -8,8 +8,6 @@
 
 #include "OSMP.h"
 
-#define FAIL ((void*) -1)
-
 /**
  * Pointer, der auf den Shared Memory zeigt.
  */
@@ -23,8 +21,8 @@ int initialised = 0;
 int OSMP_Init(int *argc, char ***argv) {
 	printf("OSMP_init\n");
 
-	int key =  ftok("/home/dominik/git/betriebsysteme/keyDatei", 5);
-	//int key =  ftok("/home/tobias/git/betriebsysteme/keyDatei", 5);
+//	int key =  ftok("/home/bsduser022/keyDatei", 5);
+	int key =  ftok("/home/tobias/git/betriebsysteme/keyDatei", 5);
 
 	if(key == -1) {
 		return OSMP_ERROR;
@@ -51,7 +49,7 @@ int OSMP_Init(int *argc, char ***argv) {
 int OSMP_Size(int *size){
 
 	if(initialised) {
-		(*size) = (*((int*)sharedMemory));
+		(*size) = ((struct sharedMemory*) sharedMemory)->size;
 		return OSMP_SUCCESS;
 
 	} else {
@@ -61,18 +59,15 @@ int OSMP_Size(int *size){
 
 int OSMP_Rank(int *rank){
 
-	printf("OSMP_Rank(rank: %d)\n", (*rank));
-
 	if(initialised) {
-		int * memoryAsInt = (int*) sharedMemory;
 
-		int size = (*memoryAsInt);
-		memoryAsInt++;
+		int size = ((struct sharedMemory*) sharedMemory)->size;
 
-		for(int i = 0; i < size; i++, memoryAsInt++) {
-			printf("Pid: %d\n", (*memoryAsInt));
+		pid_t* pids = ((char*) sharedMemory) + ((struct sharedMemory*) sharedMemory)->pidOffset;
 
-			if((*memoryAsInt) == getpid()) {
+		for(int i = 0; i < size; i++) {
+
+			if(pids[i] == getpid()) {
 				(*rank) = i;
 				return OSMP_SUCCESS;
 			}

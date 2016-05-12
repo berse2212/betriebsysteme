@@ -20,6 +20,14 @@
 #include <unistd.h>
 #include <sys/errno.h>
 
+#define FAIL ((void*) -1)
+
+
+struct sharedMemory {
+    int size;
+    int pidOffset;
+};
+
 
 /**
  * Die Routine OSMP_Init() initialisiert die OSMP-Umgebung und ermöglicht den Zugang zu den gemein-

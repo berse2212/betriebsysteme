@@ -10,47 +10,39 @@
 #include "OSMP.h"
 
 int main(int argc, char **argv) {
-	printf("Argc: %d; ", argc);
-	printf("Arguments: ");
-
-	int i;
-
-	for(i = 0; i < argc; i++) {
-		printf("%s; ", argv[i]);
-	}
-	printf("\n");
+    pid_t pid = getpid();
 
 	int rv = OSMP_Init(&argc, &argv);
 
 	if(rv == OSMP_ERROR){
-		printf("Fehler INIT. Grund: %s\n", strerror(errno));
+		printf("Pid: %d: Fehler INIT. Grund: %s\n", pid, strerror(errno));
 		exit(-1);
 	}
 
-	printf("Teste size\n");
+	printf("Pid: %d: Teste size\n", pid);
 
 	int size = -1;
 
 	rv = OSMP_Size(&size);
 
 	if(rv == OSMP_ERROR){
-		printf("Fehler Size. Grund: %s\n", strerror(errno));
+		printf("Pid: %d: Fehler Size. Grund: %s\n", pid, strerror(errno));
 		exit(-1);
 	}
 
-	printf("Dies ist die Size: %d\n", size);
-	printf("Teste Rank\n");
+	printf("Pid: %d: Dies ist die Size: %d\n", pid,size);
+	printf("Pid: %d: Teste Rank\n", pid);
 
 	int rank = -1;
 
 	rv = OSMP_Rank(&rank);
 
 	if(rv == OSMP_ERROR){
-		printf("Fehler Rank. GRund: %s\n", strerror(errno));
+		printf("Pid: %d: Fehler Rank. Grund: %s\n", pid, strerror(errno));
 		exit(-1);
 	}
 
-	printf("Dies ist der Rank: %d\n", rank);
+	printf("Pid: %d: Dies ist der Rank: %d\n", pid, rank);
 	return 0;
 }
 
