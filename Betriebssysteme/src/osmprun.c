@@ -11,12 +11,16 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <stdio.h>
-#include <wait.h>
+#include <sys/wait.h>
 #include <sys/errno.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+
+#include "OSMP.h"
+
+#define PROCESS_COUNT 5
 
 /**
  * Erzeugt neue Prozesse.
@@ -28,18 +32,20 @@
  * @param path Pfad, wo das Programm osmpexecutable liegt
  * @param arguments Argumente, die bei der Programmausführung übergeben werden
  */
-void create(int count, char* path, char** arguments);
+int create(int count, char* path, char** arguments);
 
 /**
  * Allokiert einen neuen Shared Memory mit dem Key.
+
  * @param key gültiger Schlüssel für IPC-Routinen, um shared memory zu erzeuegen
  * @param shmid Adresse ID des Shared Memory
  * @return Pointer auf den Shared Memory
  */
-void* allocate(int key, int* shmid);
+void* allocate(key_t key, int* shmid);
 
 /**
  * Löscht den Shared Memory.
+
  * @param ptr Pointer zum Shared Memory
  * @param key gültiger Schlüssel für IPC-Routinen
  */
@@ -50,45 +56,47 @@ void delete(void* ptr, int key);
  */
 void* sharedMemory;
 
-void create(int count, char* path, char** arguments) {
 
-	memcpy(sharedMemory, &count, sizeof(int));
+int create(int count, char* path, char** arguments) {
+
+	printf("hello\n");
+
+	struct sharedMemory * sharedMemoryStruct = (struct sharedMemory*) sharedMemory;
+
+	sharedMemoryStruct->size = count;
+
+	sharedMemoryStruct->pidOffset = sizeof(struct sharedMemory);
+
+    pid_t * pids = (pid_t *)((char*)sharedMemory + sharedMemoryStruct->pidOffset);
 
 	for(int i = 0; i < count; i++) {
-		pid_t pid = fork();
-
-		printf("Pid ist: %d\n", pid);
+		int pid = fork();
 
 		if(pid == -1) {
 			printf("Fehler beim Erzeugen\n");
-			exit(-1);
+			return OSMP_ERROR;
 		}
 
 		if(pid == 0) {
 			printf("Ich bin der Kindprozess\n");
 			printf("Starting Process %s\n", path);
-			int rv = execvp(path, arguments);
+			int rv = execv(path, arguments);
 
-			if (rv == -1) {
-				printf("Could not start %s\n", path);
-				printf("Reason: %s\n", strerror(errno));
-				exit(rv);
-			}
-			printf("Fehler bei der AUsführung\n");
-			exit(-1);
+            printf("Could not start %s\n", path);
+            printf("Reason: %s\n", strerror(errno));
+            exit(rv);
 		}
-		memcpy(sharedMemory + sizeof(int) * (i+1), &pid, sizeof(int));
+
+		pids[i] = pid;
 	}
 	printf("Ich bin der ELternprozess\n");
+
+	return OSMP_SUCCESS;
 }
 
 
-void* allocate(int key, int* shmid) {
-	printf("key: %d\n", key);
-
+void* allocate(key_t key, int* shmid) {
 	(*shmid) = shmget(key, 4096, IPC_CREAT | 0640);
-
-	printf("id %d\n", *shmid);
 
 	if(*shmid == -1) {
 		printf("Fehler beim allokieren vom Gemeinsammenspeicher. Grund: %s\n", strerror(errno));
@@ -97,7 +105,7 @@ void* allocate(int key, int* shmid) {
 
 	void* ptr = shmat(*shmid, NULL, 0);
 
-	if((char*) ptr == (char*) -1) {
+	if( ptr == FAIL) {
 		printf("Fehler beim einblenden des gemeinsammen Speichers. Grund: %s\n", strerror(errno));
 		exit(-1);
 	}
@@ -118,6 +126,8 @@ void delete(void* ptr, int key) {
 
 		rv = shmctl(key, IPC_RMID, shmid);
 
+		free(shmid);
+
 		if(rv == -1) {
 			printf("Fehler beim loeschen des Gemeinsammen speichers. Grund: %s\n", strerror(errno));
 		} else {
@@ -130,30 +140,40 @@ int main(int argc, char **argv) {
 
 	int shmid = 0;
 
-	sharedMemory = allocate(ftok("/home/dominik/git/betriebsysteme/keyDatei", 5), &shmid);
+    key_t key = ftok("/home/tobias/git/betriebsysteme/keyDatei", 5);
+
+    if(key == -1) {
+        printf("Fehler beim Erstellen des Keys. Grund: %s\n", strerror(errno));
+        exit(-1);
+    }
+
+	sharedMemory = allocate(key, &shmid);
 	//sharedMemory = allocate(ftok("/home/tobias/git/betriebsysteme/keyDatei", 5), &shmid);
 
-	int count = 4;
+    char* arguments[] = {"OSMPexecutable", NULL};
 
-	create(count, "/home/dominik/git/betriebsysteme/osmpexecutable/Debug/osmpexecutable", NULL);
-	//create(count, "/home/tobias/git/betriebsysteme/osmpexecutable/Debug/osmpexecutable", NULL);
+
+	//create(PROCESS_COUNT, "/home/bsduser022/OSMPexecutable/bin/Debug/OSMPexecutable", arguments);
+	create(PROCESS_COUNT, "/home/tobias/git/betriebsysteme/osmpexecutable/Debug/osmpexecutable", arguments);
 
 	int* ptr = sharedMemory;
 
 	printf("Shared Mem:\n");
-	printf("Size: %d\n", (*ptr));
-
-	ptr++;
+	printf("Size: %d\n", ((struct sharedMemory*) ptr)->size);
 
 	printf("Ausgabe Ranks:\n");
-	for(int i = 0; i < count; i++, ptr++) {
-		printf("Rank Nr %d: %d\n", i, (*ptr));
+
+	pid_t * pids = (pid_t *)((char*) sharedMemory + ((struct sharedMemory*) ptr)->pidOffset);
+
+	for(int i = 0; i < PROCESS_COUNT; i++) {
+		printf("Rank Nr %d: %d\n", i, pids[i]);
 	}
 
-	printf("Shmid = %d\n", shmid);
-
-	sleep(5);
-
+    for(int i = 0; i < PROCESS_COUNT; i++) {
+        waitpid(pids[i], NULL, 0);
+    }
 	delete(sharedMemory, shmid);
+
+	scanf("%d", ptr);
 }
 
