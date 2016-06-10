@@ -19,13 +19,42 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sys/errno.h>
+#include <sys/sem.h>
 
 #define FAIL ((void*) -1)
 
+#define OSMP_MAX_MESSAGES_PROC 16
 
-struct sharedMemory {
-    int size;
+#define OSMP_MAX_SLOTS 256
+
+#define OSMP_MAX_PAYLOAD_LENGTH 128
+
+#define SEMAPHORE_EMPTY_ALL 0
+
+#define SEMAPHORE_MUTEX 1
+
+#define SEMAPHORE_EMPTY 2
+
+#define SEMAPHORE_FULL 3
+
+
+struct sharedMemoryHeader {
+    int sizePids;
     int pidOffset;
+    int messageOffset;
+    int firstEmptyMessageOffset;
+};
+
+struct offsetOfKP {
+	int firstMessageOffset;
+	int lastMessageOffset;
+};
+
+struct messageBlockHeader {
+	int sourcePid;
+	int payloadOffset;
+	int payloadLength;
+	int nextMessageOffset;
 };
 
 
