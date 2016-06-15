@@ -5,12 +5,12 @@
 * Programm, welches von den Kindprozessen geladen werden soll.
 * Hier werden erstmal nur die OSMP-Routinen getestet.
 *
-* LAST MODIFICATION: Dominik und Tobias, 19.04.2016*****************************************************************************/
+* LAST MODIFICATION: Dominik und Tobias, 15.06.2016*****************************************************************************/
 
 #include "OSMP.h"
 
 int main(int argc, char **argv) {
-    pid_t pid = getpid();
+	pid_t pid = getpid();
 
 	int rv = OSMP_Init(&argc, &argv);
 
@@ -44,9 +44,7 @@ int main(int argc, char **argv) {
 
 	printf("Pid: %d: Dies ist der Rank: %d\n", pid, rank);
 
-
 	if(rank == 0) {
-
 		sleep(5);
 
 		for(int i = 0; i < 18; i++){
@@ -65,15 +63,10 @@ int main(int argc, char **argv) {
 				printf("Send done (%i) :)\n", i);
 			}
 		}
-
-
-
 	}
 
 	if(rank == 1) {
-
 		for(int i= 0; i < 2; i++) {
-
 			printf("Teste receive\n");
 
 			size_t size = 11;
@@ -91,7 +84,6 @@ int main(int argc, char **argv) {
 				printf("received: %s \n", message);
 			}
 			sleep(10);
-
 		}
 	}
 
