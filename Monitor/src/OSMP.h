@@ -5,7 +5,7 @@
 * Bilbliothek in der die OSMP-Routinen zur Verfügung gestellt werden.
 * Außerdem werden hier alle nötigen Biblitheken geladen.
 *
-* LAST MODIFICATION: Dominik und Tobias, 19.04.2016*****************************************************************************/
+* LAST MODIFICATION: Dominik und Tobias, 15.06.2016*****************************************************************************/
 #ifndef OSMP_H_
 #define OSMP_H_
 
@@ -21,23 +21,59 @@
 #include <sys/errno.h>
 #include <sys/sem.h>
 
+/**
+ * Konstante für Fehlerfall bei Shared Memory Erzeugung
+ */
 #define FAIL ((void*) -1)
 
+/**
+ * maximale Zahl der Nachrichten pro Prozess
+ */
 #define OSMP_MAX_MESSAGES_PROC 16
 
+/**
+ * maximale Anzahl der Nachrichten, die insgesamt vorhanden sein dürfen
+ */
 #define OSMP_MAX_SLOTS 256
 
+/**
+ * maximale Länge der Nutzlast einer Nachricht 
+ */
 #define OSMP_MAX_PAYLOAD_LENGTH 128
 
+/**
+ * Konstante für Zugriff auf Semaphore Empty All
+ */
 #define SEMAPHORE_EMPTY_ALL 0
 
+/**
+ * Konstante für Zugriff auf Semaphore Mutex
+ */
 #define SEMAPHORE_MUTEX 1
 
+/**
+ * Konstante für Zugriff auf Semaphore Empty
+ */
 #define SEMAPHORE_EMPTY 2
 
+/**
+ * Konstante für Zugriff auf Semaphore Full
+ */
 #define SEMAPHORE_FULL 3
 
+/**
+ * Rückgabewert der OSMP-Routinen im Erfolgsfall
+ */
+#define OSMP_SUCCESS 0
+/**
+ * Rückgabewert der OSMP-Routinen im Fehlerfall
+ */
+#define OSMP_ERROR -1
 
+
+/**
+ * Struktur des Headers des Sharead Memorys
+ */
 struct sharedMemoryHeader {
     int sizePids;
     int pidOffset;
@@ -45,11 +81,17 @@ struct sharedMemoryHeader {
     int firstEmptyMessageOffset;
 };
 
+/**
+ * Struktur der Postfächer der Kindprozesse
+ */
 struct offsetOfKP {
 	int firstMessageOffset;
 	int lastMessageOffset;
 };
 
+/**
+ * Struktur der Message-Blöcke
+ */
 struct messageBlockHeader {
 	int sourcePid;
 	int payloadOffset;
@@ -126,15 +168,5 @@ int OSMP_Recv(void *buf, int count, int *source, int *len);
  * @return OSMP_SUCCESS im Erfolgsfall, OSMP_ERROR im Fehlerfall
  */
 int OSMP_Finalize(void);
-
-/**
- * Rückgabewert der OSMP-Routinen im Erfolgsfall
- */
-#define OSMP_SUCCESS 0
-/**
- * Rückgabewert der OSMP-Routinen im Fehlerfall
- */
-#define OSMP_ERROR -1
-
 
 #endif /* OSMP_H_ */
