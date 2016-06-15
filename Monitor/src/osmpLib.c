@@ -4,7 +4,7 @@
 *
 * Hier stehen die Sourcen zu den OSMP-Routinen.
 *
-* LAST MODIFICATION: Dominik und Tobias, 19.04.2016*****************************************************************************/
+* LAST MODIFICATION: Dominik und Tobias, 15.06.2016*****************************************************************************/
 
 #include "OSMP.h"
 
@@ -18,8 +18,14 @@ void* sharedMemory = NULL;
  */
 int initialised = 0;
 
+/**
+ * ID des Semaphorsatzes
+ */
 int semSatz;
 
+/**
+ * Erzeugt einen neuen Semaphorsatz
+ */
 int getSemaphore();
 
 int OSMP_Init(int *argc, char ***argv) {
@@ -27,7 +33,6 @@ int OSMP_Init(int *argc, char ***argv) {
 
 //	int key =  ftok("/home/bsduser022/keyDatei", 5);
 	int key =  ftok("/home/tobias/git/betriebsysteme/keyDatei", 5);
-
 
 	if(key == -1) {
 		return OSMP_ERROR;
@@ -48,11 +53,13 @@ int OSMP_Init(int *argc, char ***argv) {
 	int count = ((struct sharedMemoryHeader*) sharedMemory)->sizePids;
 
 	int rv = shmdt(sharedMemory);
+	
 	if(rv == -1) {
 		return OSMP_ERROR;
 	}
 
-	int size = sizeof(struct sharedMemoryHeader) +  count * (sizeof(int) + sizeof(struct offsetOfKP))
+	int size = sizeof(struct sharedMemoryHeader) 
+		+  count * (sizeof(int) + sizeof(struct offsetOfKP))
 		+ OSMP_MAX_SLOTS * (sizeof(struct messageBlockHeader) + OSMP_MAX_PAYLOAD_LENGTH);
 
 	shmid = shmget(key, size, 0);
@@ -64,7 +71,9 @@ int OSMP_Init(int *argc, char ***argv) {
 	sharedMemory = shmat(shmid, NULL, 0);
 
 	initialised = 1;
+	
 	getSemaphore();
+	
 	return OSMP_SUCCESS;
 }
 
@@ -92,41 +101,34 @@ int getSemOffset(int semName) {
 		case SEMAPHORE_FULL:
 			OSMP_Size(&size);
 			return size + 2;
-
 	}
-
+	
 	return OSMP_ERROR;
 }
 
 void sem_wait(int semName, int index) {
-
 	struct sembuf sembuf = {.sem_num = (unsigned short) (getSemOffset(semName) + index), .sem_op = -1, .sem_flg = 0};
 
 	semop(semSatz, &sembuf, 1);
 }
 
 void sem_signal(int semName, int index) {
-
 	struct sembuf sembuf = {.sem_num = (unsigned short) (getSemOffset(semName) + index), .sem_op = 1, .sem_flg = 0};
 
 	semop(semSatz, &sembuf, 1);
 }
 
 int OSMP_Size(int *size){
-
 	if(initialised && (size != NULL)) {
 		(*size) = ((struct sharedMemoryHeader*) sharedMemory)->sizePids;
 		return OSMP_SUCCESS;
-
 	}
 
 	return OSMP_ERROR;
 }
 
 int OSMP_Rank(int *rank){
-
 	if(initialised && (rank != NULL)) {
-
 		int size = ((struct sharedMemoryHeader*) sharedMemory)->sizePids;
 
 		printf("pid offset %d\n", ((struct sharedMemoryHeader*) sharedMemory)->pidOffset);
@@ -134,7 +136,6 @@ int OSMP_Rank(int *rank){
 		pid_t* pids = (pid_t *)(((char*) sharedMemory) + ((struct sharedMemoryHeader*) sharedMemory)->pidOffset);
 
 		for(int i = 0; i < size; i++) {
-
 			printf("pids[i]: %d ; pid: %d\n", pids[i], getpid());
 
 			if(pids[i] == getpid()) {
@@ -143,11 +144,11 @@ int OSMP_Rank(int *rank){
 			}
 		}
 	}
+	
 	return OSMP_ERROR;
 }
 
 int OSMP_Send(const void *buf, int count, int dest ){
-
 	if(initialised) {
 		int rank = -1;
 
@@ -204,40 +205,33 @@ int OSMP_Send(const void *buf, int count, int dest ){
 			block->nextMessageOffset = firstEmptyMessageOffset;
 			messageOffset[dest].lastMessageOffset = firstEmptyMessageOffset;
 		} else {
-
 			printf("First message offset: %d\n", firstEmptyMessageOffset);
 
 			messageOffset[dest].lastMessageOffset = firstEmptyMessageOffset;
 			messageOffset[dest].firstMessageOffset = firstEmptyMessageOffset;
 		}
 
-
 		//Synchronisation
 		sem_signal(SEMAPHORE_MUTEX, 0);
 		sem_signal(SEMAPHORE_FULL, dest);
 
-
 		printf("Send nach signal SemFull value: %d\n", semctl(semSatz, getSemOffset(SEMAPHORE_FULL) + rank, GETVAL));
 		printf("Send nach signal SemMutex value: %d\n", semctl(semSatz, getSemOffset(SEMAPHORE_MUTEX) + 0, GETVAL));
-
 		//Synchronisation
 
 		printf("Senden beendet (Nach Signal)\n");
-
 	}
 
 	return OSMP_SUCCESS;
 }
 
 int OSMP_Recv(void *buf, int count, int *source, int *len){
-
 	if(initialised) {
 		int rank = -1;
 
 		if(OSMP_Rank(&rank) == OSMP_ERROR) {
 			return OSMP_ERROR;
 		}
-
 
 		printf("Rec SemFull value: %d\n", semctl(semSatz, getSemOffset(SEMAPHORE_FULL) + rank, GETVAL));
 		printf("Rec SemMutex value: %d\n", semctl(semSatz, getSemOffset(SEMAPHORE_MUTEX) + 0, GETVAL));
