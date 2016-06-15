@@ -10,7 +10,9 @@
 
 #include "OSMP.h"
 
-
+/**
+ * Anzahl der Prozesse die Erzeugt werden
+ */
 #define PROCESS_COUNT 5
 
 /**
@@ -44,8 +46,19 @@ void delete(void* ptr, int key);
 
 struct sharedMemoryHeader* buildSharedMemoryStruct(int count);
 
+/**
+ * Baut die Struktur des Semaphorsatzes auf
+ */
 int createSemaphore(int size);
 
+/**
+ * Löscht den Semaphorsatz
+ */
+void deleteSemaphore();
+
+/**
+ * ID des Semaphorsatzes
+ */
 int semSatz;
 
 /**
@@ -84,7 +97,6 @@ struct sharedMemoryHeader* buildSharedMemoryStruct(int count) {
 }
 
 int create(int count, char* path, char** arguments) {
-
 	printf("hello\n");
 
 	struct sharedMemoryHeader* sharedMemoryStruct = buildSharedMemoryStruct(count);
@@ -93,7 +105,7 @@ int create(int count, char* path, char** arguments) {
 
 	pid_t * pids = (pid_t *)((char*)sharedMemory + sharedMemoryStruct->pidOffset);
 
-    struct offsetOfKP * offsetOfKps = (struct offsetOfKP *)((char*)sharedMemory + sharedMemoryStruct->messageOffset);
+	struct offsetOfKP * offsetOfKps = (struct offsetOfKP *)((char*)sharedMemory + sharedMemoryStruct->messageOffset);
 
 	for(int i = 0; i < count; i++) {
 		int pid = fork();
@@ -108,9 +120,9 @@ int create(int count, char* path, char** arguments) {
 			printf("Starting Process %s\n", path);
 			int rv = execv(path, arguments);
 
-            printf("Could not start %s\n", path);
-            printf("Reason: %s\n", strerror(errno));
-            exit(rv);
+            		printf("Could not start %s\n", path);
+        		printf("Reason: %s\n", strerror(errno));
+        		exit(rv);
 		}
 
 		printf("setze pid: %d\n" , pid);
@@ -147,11 +159,8 @@ int createSemaphore(int size) {
 		} else {
 			val = semctl(semSatz, i, SETVAL, (int) 0);
 		}
-
 		printf("Val: %d \n", val);
 	}
-
-
 	return OSMP_SUCCESS;
 }
 
@@ -161,8 +170,8 @@ void deleteSemaphore() {
 
 
 void* allocate(key_t key, int* shmid, int count) {
-
-	int size = sizeof(struct sharedMemoryHeader) +  count * (sizeof(int) + sizeof(struct offsetOfKP))
+	int size = sizeof(struct sharedMemoryHeader) 
+		+  count * (sizeof(int) + sizeof(struct offsetOfKP))
 		+ OSMP_MAX_SLOTS * (sizeof(struct messageBlockHeader) + OSMP_MAX_PAYLOAD_LENGTH);
 
 	printf("Size vom SharedMemory %ld\n", size);
@@ -176,11 +185,10 @@ void* allocate(key_t key, int* shmid, int count) {
 
 	void* ptr = shmat(*shmid, NULL, 0);
 
-	if( ptr == FAIL) {
+	if(ptr == FAIL) {
 		printf("Fehler beim einblenden des gemeinsammen Speichers. Grund: %s\n", strerror(errno));
 		exit(-1);
 	}
-
 	printf("Speicher erfolgreich erstellt :)!\n");
 	return ptr;
 }
@@ -208,21 +216,19 @@ void delete(void* ptr, int key) {
 }
 
 int main(int argc, char **argv) {
-
 	int shmid = 0;
 
-    key_t key = ftok("/home/tobias/git/betriebsysteme/keyDatei", 5);
+    	key_t key = ftok("/home/tobias/git/betriebsysteme/keyDatei", 5);
 
-    if(key == -1) {
-        printf("Fehler beim Erstellen des Keys. Grund: %s\n", strerror(errno));
-        exit(-1);
-    }
+    	if(key == -1) {
+		printf("Fehler beim Erstellen des Keys. Grund: %s\n", strerror(errno));
+        	exit(-1);
+    	}
 
 	sharedMemory = allocate(key, &shmid, PROCESS_COUNT);
 	//sharedMemory = allocate(ftok("/home/tobias/git/betriebsysteme/keyDatei", 5), &shmid);
 
-    char* arguments[] = {"OSMPexecutable", NULL};
-
+    	char* arguments[] = {"OSMPexecutable", NULL};
 
 	//create(PROCESS_COUNT, "/home/bsduser022/OSMPexecutable/bin/Debug/OSMPexecutable", arguments);
 	create(PROCESS_COUNT, "/home/tobias/git/betriebsysteme/osmpexecutable/Debug/osmpexecutable", arguments);
@@ -240,13 +246,13 @@ int main(int argc, char **argv) {
 		printf("Rank Nr %d: %d\n", i, pids[i]);
 	}
 
-    for(int i = 0; i < PROCESS_COUNT; i++) {
-        waitpid(pids[i], NULL, 0);
-    }
+    	for(int i = 0; i < PROCESS_COUNT; i++) {
+        	waitpid(pids[i], NULL, 0);
+    	}
 
 	delete(sharedMemory, shmid);
 	deleteSemaphore();
-
+	
 	//scanf("%d", ptr);
 }
 
