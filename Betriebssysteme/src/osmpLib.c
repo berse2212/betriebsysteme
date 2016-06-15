@@ -26,7 +26,7 @@ int semSatz;
 /**
  * Erzeugt einen neuen Semaphorsatz
  */
-int createSemaphore();
+int getSemaphore();
 
 int OSMP_Init(int *argc, char ***argv) {
 	printf("OSMP_init\n");
@@ -53,6 +53,7 @@ int OSMP_Init(int *argc, char ***argv) {
 	int count = ((struct sharedMemoryHeader*) sharedMemory)->sizePids;
 
 	int rv = shmdt(sharedMemory);
+	
 	if(rv == -1) {
 		return OSMP_ERROR;
 	}
@@ -70,11 +71,13 @@ int OSMP_Init(int *argc, char ***argv) {
 	sharedMemory = shmat(shmid, NULL, 0);
 
 	initialised = 1;
-	createSemaphore();
+	
+	getSemaphore();
+	
 	return OSMP_SUCCESS;
 }
 
-int createSemaphore() {
+int getSemaphore() {
 	int keyEmpty = ftok("/home/tobias/git/betriebsysteme/semaphoreDateiEmpty", 42);
 
 	int size = -1;
