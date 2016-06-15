@@ -1,16 +1,30 @@
-/*
- * monitor.c
- *
- *  Created on: 15.06.2016
- *      Author: tobias
- */
+/******************************************************************************
+* FILE: monitor.c
+* DESCRIPTION:
+*
+* Stellt die Fuktion zur Verfügung, um sich ein textuelles Abbild des Shared Memorys in der Console ausgeben zu lassen.
+* Damit das Programm funktioniert, muss die OSMP_Run gelaufen sein, also der Shared Memory erzeugt sein.
+*
+* LAST MODIFICATION: Dominik und Tobias, 15.06.2016*****************************************************************************/
 #include "OSMP.h"
 
-void* sharedMemory;
+/**
+ * Pointer, der auf den Shared Memory zeigt.
+ */
+void* sharedMemory = NULL;
+
+/**
+ * Erzeugt den Zugriff auf den Shared Memory, der bereits in der OSMP_Run erzeugt wurde.
+ */
+int getMemory();
+
+/**
+ * Gibt den Shared Memory textuell in der Console aus
+ */
+void printMemory();
 
 int getMemory() {
 	int key =  ftok("/home/tobias/git/betriebsysteme/keyDatei", 5);
-
 
 	if(key == -1) {
 		return OSMP_ERROR;
@@ -31,11 +45,13 @@ int getMemory() {
 	int count = ((struct sharedMemoryHeader*) sharedMemory)->sizePids;
 
 	int rv = shmdt(sharedMemory);
+	
 	if(rv == -1) {
 		return OSMP_ERROR;
 	}
 
-	int size = sizeof(struct sharedMemoryHeader) +  count * (sizeof(int) + sizeof(struct offsetOfKP))
+	int size = sizeof(struct sharedMemoryHeader) 
+		+  count * (sizeof(int) + sizeof(struct offsetOfKP))
 		+ OSMP_MAX_SLOTS * (sizeof(struct messageBlockHeader) + OSMP_MAX_PAYLOAD_LENGTH);
 
 	shmid = shmget(key, size, 0);
@@ -50,7 +66,6 @@ int getMemory() {
 
 void printMemory() {
 	printf("Aufbau des Shared Memory:\n");
-
 
 	struct sharedMemoryHeader* sharedMemoryStruct = (struct sharedMemoryHeader *) sharedMemory;
 
@@ -67,7 +82,6 @@ void printMemory() {
 	printf("\tmessageOffset: %d\n", sharedMemoryStruct->messageOffset);
 	printf("\tfirstEmptyMessageOffset: %d\n", sharedMemoryStruct->firstEmptyMessageOffset);
 
-
 	printf("PID Bereich:\n");
 
 	for(int i = 0; i < sharedMemoryStruct->sizePids; i++) {
@@ -81,14 +95,12 @@ void printMemory() {
 		printf("\t         lastMessageOffset: %d\n", messageOffset[i].lastMessageOffset);
 	}
 
-
 	printf("Empty List:\n");
 
 	while(emptyMessage->nextMessageOffset != -1) {
 		printf("\tnextMessageOffset: %d\n", emptyMessage->nextMessageOffset);
 		emptyMessage = (struct messageBlockHeader*) (((char*) sharedMemory) + emptyMessage->nextMessageOffset);
 	}
-
 
 	int messageOffsetInbox = -1;
 	struct messageBlockHeader* message;
@@ -110,7 +122,6 @@ void printMemory() {
 			messageOffsetInbox = message->nextMessageOffset;
 		}
 	}
-
 }
 
 int main(int argc, char **argv) {
@@ -128,6 +139,5 @@ int main(int argc, char **argv) {
 		value = getchar();
 		fflush(stdin);
 	}
-
 	return 1;
 }
