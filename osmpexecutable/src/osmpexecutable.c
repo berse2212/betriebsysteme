@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
 		for(int i = 0; i < 18; i++){
 			printf("Teste send\n");
 			int size = 15;
-			char* text = malloc(size);
+			char* text = malloc((size_t)size);
 
 			sprintf(text, "hi du ei %d", i);
 
@@ -95,8 +95,14 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	printf("Pid: %d: Teste finalize\n", pid);
+	rv = OSMP_Finalize();
 
-	return 0;
+	if(rv == -1) {
+		printf("Pid: %d: Fehler finalize. Grund: %s\n", pid, strerror(errno));
+	}
+
+	return rv;
 }
 
 

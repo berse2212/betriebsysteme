@@ -8,55 +8,7 @@
 *
 * LAST MODIFICATION: Dominik und Tobias, 19.04.2016*****************************************************************************/
 
-#include <stdlib.h>
-#include <sys/types.h>
-#include <stdio.h>
-#include <sys/wait.h>
-#include <sys/errno.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <sys/sem.h>
-#include <inttypes.h>
-
-
-#define FAIL ((void*) -1)
-
-#define OSMP_MAX_MESSAGES_PROC 16
-
-#define OSMP_MAX_SLOTS 256
-
-#define OSMP_MAX_PAYLOAD_LENGTH 128
-
-/**
- * Rückgabewert der OSMP-Routinen im Erfolgsfall
- */
-#define OSMP_SUCCESS 0
-/**
- * Rückgabewert der OSMP-Routinen im Fehlerfall
- */
-#define OSMP_ERROR -1
-
-
-struct sharedMemoryHeader {
-    int sizePids;
-    int pidOffset;
-    int messageOffset;
-    int firstEmptyMessageOffset;
-};
-
-struct offsetOfKP {
-	int firstMessageOffset;
-	int lastMessageOffset;
-};
-
-struct messageBlockHeader {
-	int sourcePid;
-	int payloadOffset;
-	int payloadLength;
-	int nextMessageOffset;
-};
+#include "OSMP.h"
 
 
 #define PROCESS_COUNT 5
@@ -80,7 +32,7 @@ int create(int count, char* path, char** arguments);
  * @param shmid Adresse ID des Shared Memory
  * @return Pointer auf den Shared Memory
  */
-void* allocate(key_t key, int* shmid);
+void* allocate(key_t key, int* shmid, int count);
 
 /**
  * Löscht den Shared Memory.
@@ -116,10 +68,14 @@ struct sharedMemoryHeader* buildSharedMemoryStruct(int count) {
 		message->sourcePid = -1;
 		message->payloadOffset = -1;
 		message->payloadLength = -1;
-		message->nextMessageOffset =  lastOffset + (int) sizeof(struct messageBlockHeader) + OSMP_MAX_PAYLOAD_LENGTH;
-		lastOffset = message->nextMessageOffset;
 
-		message = (struct messageBlockHeader*) ((char*) sharedMemory + message->nextMessageOffset);
+		if(i + 1 == OSMP_MAX_SLOTS) {
+			message->nextMessageOffset = -1;
+		} else {
+			message->nextMessageOffset =  lastOffset + (int) sizeof(struct messageBlockHeader) + OSMP_MAX_PAYLOAD_LENGTH;
+			lastOffset = message->nextMessageOffset;
+			message = (struct messageBlockHeader*) ((char*) sharedMemory + message->nextMessageOffset);
+		}
 	}
 
 	printf("pid offset %d\n", sharedMemoryStruct->pidOffset);
@@ -165,6 +121,10 @@ int create(int count, char* path, char** arguments) {
 	}
 	printf("Ich bin der ELternprozess\n");
 
+	struct sembuf sembuf = {.sem_num = (unsigned short) (1), .sem_op = 1, .sem_flg = 0};
+
+	semop(semSatz, &sembuf, 1);
+
 	return OSMP_SUCCESS;
 }
 
@@ -181,7 +141,7 @@ int createSemaphore(int size) {
 		if(i == 0) {
 			val = semctl(semSatz, i, SETVAL, (int) OSMP_MAX_SLOTS);
 		} else if(i == 1) {
-			val = semctl(semSatz, i, SETVAL, (int) 1);
+			val = semctl(semSatz, i, SETVAL, (int) 0);
 		} else if(i < size + 2) {
 			val = semctl(semSatz, i, SETVAL, (int) OSMP_MAX_MESSAGES_PROC);
 		} else {
@@ -200,9 +160,10 @@ void deleteSemaphore() {
 }
 
 
-void* allocate(key_t key, int* shmid) {
-	size_t size = OSMP_MAX_SLOTS * (OSMP_MAX_PAYLOAD_LENGTH + sizeof(struct messageBlockHeader))
-			+ 1000;
+void* allocate(key_t key, int* shmid, int count) {
+
+	int size = sizeof(struct sharedMemoryHeader) +  count * (sizeof(int) + sizeof(struct offsetOfKP))
+		+ OSMP_MAX_SLOTS * (sizeof(struct messageBlockHeader) + OSMP_MAX_PAYLOAD_LENGTH);
 
 	printf("Size vom SharedMemory %ld\n", size);
 
@@ -257,7 +218,7 @@ int main(int argc, char **argv) {
         exit(-1);
     }
 
-	sharedMemory = allocate(key, &shmid);
+	sharedMemory = allocate(key, &shmid, PROCESS_COUNT);
 	//sharedMemory = allocate(ftok("/home/tobias/git/betriebsysteme/keyDatei", 5), &shmid);
 
     char* arguments[] = {"OSMPexecutable", NULL};
